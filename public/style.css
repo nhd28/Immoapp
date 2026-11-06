@@ -41,6 +41,8 @@ h2 { font-size: 1.05rem; }
 button, input, select, textarea { font: inherit; color: inherit; }
 img { display: block; max-width: 100%; }
 [hidden] { display: none !important; }
+.show-sm { display: none; }
+@media (max-width: 640px) { .show-sm { display: inline; } }
 
 /* ---------- Bausteine ---------- */
 .btn {
@@ -223,7 +225,8 @@ table.list td.num, table.list th.num { text-align: right; }
   .search { max-width: none; order: 10; flex-basis: 100%; }
   .board { grid-auto-columns: 84%; }
   .hide-sm, .user-chip { display: none; }
-  .topbar-inner { gap: 8px; }
+  .topbar-inner { gap: 8px; flex-wrap: nowrap; }
+  .brand { font-size: 1rem; min-width: 0; white-space: nowrap; }
   .detail-head h1 { font-size: 1.2rem; }
 }
 @media (hover: hover) and (pointer: fine) { [data-upload=camera] { display: none; } }

@@ -85,7 +85,7 @@ function topbar() {
     <span class="spacer"></span>
     <button class="btn primary" data-act="new">+ Exposé<span class="hide-sm">&nbsp;hochladen</span></button>
     <span class="user-chip">👤 ${esc(CONFIG.user)}</span>
-    <button class="btn small ghost" data-act="logout">Abmelden</button>
+    <button class="btn small ghost" data-act="logout" title="Abmelden" aria-label="Abmelden"><span class="show-sm">⏻</span><span class="hide-sm">Abmelden</span></button>
   </div></header>`;
 }
 
