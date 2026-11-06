@@ -1,0 +1,28 @@
+{
+  "name": "immoapp",
+  "version": "1.0.0",
+  "description": "Immobilien-Exposé-Pipeline: Exposés hochladen, bewerten, Bilder, Status von Eingang bis Kauf",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --watch --disable-warning=ExperimentalWarning src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nhd28/Immoapp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nhd28/Immoapp/issues"
+  },
+  "homepage": "https://github.com/nhd28/Immoapp#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
+    "express": "^4.22.3",
+    "multer": "^2.5.0"
+  },
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.13"
+  }
+}
