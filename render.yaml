@@ -1,0 +1,29 @@
+# Render Blueprint – Ein-Klick-Deployment der Immo-Pipeline.
+# Render → New → Blueprint → dieses Repository auswählen.
+services:
+  - type: web
+    name: immo-pipeline
+    runtime: node
+    region: frankfurt          # Server in Deutschland/EU
+    plan: starter              # nötig für die dauerhafte Festplatte (Free-Plan hat keine Disks)
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    disk:
+      name: immo-data
+      mountPath: /var/data     # Datenbank + hochgeladene Exposés/Bilder
+      sizeGB: 5
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATA_DIR
+        value: /var/data
+      - key: APP_USERS
+        value: Ich,Matthias    # im Render-Dashboard auf eure Namen ändern
+      - key: APP_PASSWORD
+        sync: false            # wird beim Anlegen abgefragt
+      - key: ANTHROPIC_API_KEY
+        sync: false            # optional, für die KI-Analyse – leer lassen = aus
+      - key: APP_SECRET
+        generateValue: true    # Schlüssel für Login-Cookies und Datei-Links

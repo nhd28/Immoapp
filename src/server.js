@@ -29,6 +29,8 @@ function readUser(req) {
   return name;
 }
 
+app.get('/healthz', (req, res) => res.type('text').send('ok'));
+
 app.get('/api/config', (req, res) => {
   res.json({ users: USERS, passwordRequired: Boolean(PASSWORD), user: readUser(req), statuses: STATUSES, criteria: CRITERIA, aiEnabled: aiEnabled() });
 });
