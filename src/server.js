@@ -57,7 +57,23 @@ const requireUser = (req, res, next) => {
   next();
 };
 app.use('/api', requireUser);
-app.use('/files', requireUser, express.static(UPLOAD_DIR, { maxAge: '7d', index: false }));
+// Signierte, zeitlich begrenzte Datei-Links – für die native App, die PDFs im System-Viewer
+// (ohne Session-Cookie) öffnet.
+const FILE_LINK_TTL = 24 * 3600;
+const fileSig = (name, exp) => crypto.createHmac('sha256', SECRET).update(`file:${name}:${exp}`).digest('hex');
+function signedFileUrl(name) {
+  const exp = Math.floor(Date.now() / 1000) + FILE_LINK_TTL;
+  return `/files/${name}?exp=${exp}&sig=${fileSig(name, exp)}`;
+}
+function fileAccess(req, res, next) {
+  const { exp, sig } = req.query;
+  if (sig && exp && Number(exp) > Date.now() / 1000) {
+    const expected = fileSig(decodeURIComponent(req.path.slice(1)), exp);
+    if (String(sig).length === expected.length && crypto.timingSafeEqual(Buffer.from(String(sig)), Buffer.from(expected))) return next();
+  }
+  return requireUser(req, res, next);
+}
+app.use('/files', fileAccess, express.static(UPLOAD_DIR, { maxAge: '7d', index: false }));
 
 // ---------- Uploads ----------
 const upload = multer({
@@ -134,7 +150,7 @@ function fullProperty(id) {
   const p = db.prepare('SELECT * FROM properties WHERE id = ?').get(id);
   if (!p) return null;
   const files = db.prepare('SELECT * FROM files WHERE property_id = ? ORDER BY is_cover DESC, id').all(id)
-    .map((f) => ({ ...f, url: `/files/${f.stored_name}` }));
+    .map((f) => ({ ...f, url: `/files/${f.stored_name}`, signed_url: signedFileUrl(f.stored_name) }));
   const activity = db.prepare('SELECT * FROM activity WHERE property_id = ? ORDER BY id DESC LIMIT 200').all(id);
   return { ...p, ai_analysis: p.ai_analysis ? JSON.parse(p.ai_analysis) : null, files, activity, ...ratingSummary(id) };
 }

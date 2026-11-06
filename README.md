@@ -53,6 +53,12 @@ docker run -d -p 3000:3000 -v immo-data:/data \
 Funktioniert genauso auf Render, Railway, Fly.io o. Ä. – wichtig ist ein **persistentes Volume** für `/data`
 und HTTPS davor (machen diese Anbieter automatisch).
 
+## Native App (iOS & Android)
+
+Unter [`mobile/`](mobile/README.md) liegt eine native App-Hülle (Capacitor). Android-APKs baut GitHub Actions
+automatisch, iOS-Builds gehen per Workflow direkt zu TestFlight – Anleitung in [`mobile/README.md`](mobile/README.md).
+Zusätzlich lässt sich die Web-App auf iPhone/Android über „Zum Home-Bildschirm“ wie eine App installieren.
+
 ## Technik
 
 Express + `node:sqlite` (keine nativen Abhängigkeiten), Multer für Uploads, Frontend ohne Build-Schritt

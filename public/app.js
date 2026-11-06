@@ -8,7 +8,19 @@ const ui = {
   hideClosed: localStorage.getItem('hideClosed') === '1',
   sort: { key: 'updated_at', dir: -1 },
 };
-const NEBENKOSTEN = 0.105; // ca. Grunderwerbsteuer + Notar/Grundbuch + Makler
+const NEBENKOSTEN = 0.105;
+// Läuft die Seite in der nativen App (Capacitor)?
+const NATIVE = Boolean(window.Capacitor?.isNativePlatform?.());
+if (NATIVE) document.documentElement.classList.add('native');
+// Externe Links und Dokumente in der App im System-Browser/-Viewer öffnen
+document.addEventListener('click', (e) => {
+  const a = e.target.closest?.('a[target=_blank]');
+  if (!a || !NATIVE) return;
+  const Browser = window.Capacitor.Plugins?.Browser;
+  if (!Browser) return;
+  e.preventDefault();
+  Browser.open({ url: new URL(a.dataset.signed || a.getAttribute('href'), location.href).href, presentationStyle: 'fullscreen' });
+}); // ca. Grunderwerbsteuer + Notar/Grundbuch + Makler
 
 // ---------- Hilfsfunktionen ----------
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -325,7 +337,7 @@ async function renderDetail(id, keepScroll = false) {
       <div class="stack">
         <section class="card">
           <div class="section-head"><h2>Bilder</h2><span class="muted small">${images.length}</span><span class="spacer"></span>
-            <button class="btn small" data-upload="image">+ Bilder</button></div>
+            <button class="btn small" data-upload="camera" title="Foto aufnehmen">📷 Kamera</button><button class="btn small" data-upload="image">+ Bilder</button></div>
           ${images.length ? `<div class="gallery-main" id="gmain" style="background-image:url('${esc(images[0].url)}')"></div>
           <div class="thumbs">${images.map((im, i) => `<div class="thumb ${i === 0 ? 'active' : ''}" data-i="${i}" style="background-image:url('${esc(im.url)}')">${im.is_cover ? '<span class="badge cover-tag">Titel</span>' : ''}</div>`).join('')}</div>
           <div class="row small" style="margin-top:8px"><button class="btn small" id="setCover">Als Titelbild</button><button class="btn small danger" id="delImg">Bild löschen</button></div>`
@@ -398,7 +410,7 @@ async function renderDetail(id, keepScroll = false) {
           <div class="section-head"><h2>Exposés &amp; Dokumente</h2><span class="spacer"></span><button class="btn small" data-upload="expose">+ Datei</button></div>
           <div class="files-list">${docs.map((d) => `<div class="file-row">
             <span class="file-icon">${esc((d.original_name || '').split('.').pop().toUpperCase().slice(0, 4) || 'DOC')}</span>
-            <a class="name" href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.original_name)}</a>
+            <a class="name" href="${esc(d.url)}" data-signed="${esc(d.signed_url)}" target="_blank" rel="noopener">${esc(d.original_name)}</a>
             <span class="muted small">${nf((d.size || 0) / 1048576, 1)} MB</span>
             <button class="btn small ghost danger" data-delfile="${d.id}" title="Löschen">✕</button></div>`).join('') || '<div class="dropzone" data-upload="expose">📄 Exposé-PDF hochladen</div>'}</div>
         </section>
@@ -443,7 +455,12 @@ async function renderDetail(id, keepScroll = false) {
   };
   $app.querySelectorAll('[data-upload]').forEach((el) => {
     const kind = el.dataset.upload;
-    el.onclick = () => { upl.accept = kind === 'image' ? 'image/*' : 'application/pdf,image/*,.doc,.docx,.xls,.xlsx'; upl.onchange = () => { doUpload(upl.files, kind); upl.value = ''; }; upl.click(); };
+    el.onclick = () => {
+      upl.accept = kind === 'expose' ? 'application/pdf,image/*,.doc,.docx,.xls,.xlsx' : 'image/*';
+      if (kind === 'camera') upl.setAttribute('capture', 'environment'); else upl.removeAttribute('capture');
+      upl.onchange = () => { doUpload(upl.files, kind === 'camera' ? 'image' : kind); upl.value = ''; };
+      upl.click();
+    };
     el.ondragover = (e) => { e.preventDefault(); el.classList.add('over'); };
     el.ondragleave = () => el.classList.remove('over');
     el.ondrop = (e) => { e.preventDefault(); el.classList.remove('over'); doUpload(e.dataTransfer.files, kind); };

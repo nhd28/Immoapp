@@ -1,0 +1,69 @@
+name: Android-App bauen
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/android.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      # Repository-Variable (Settings → Secrets and variables → Actions → Variables)
+      IMMO_SERVER_URL: ${{ vars.IMMO_SERVER_URL }}
+      APP_VERSION_CODE: ${{ github.run_number }}
+      APP_VERSION_NAME: 1.0.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - name: Server-Adresse prüfen
+        run: |
+          if [ -z "$IMMO_SERVER_URL" ]; then
+            echo "::warning::IMMO_SERVER_URL ist nicht gesetzt – die App zeigt nur einen Hinweis statt der Immo-Pipeline."
+          else
+            echo "App lädt: $IMMO_SERVER_URL"
+          fi
+      - run: npx cap sync android
+      - name: Signierschlüssel einrichten
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "BUILD_TASK=assembleRelease" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Kein ANDROID_KEYSTORE_BASE64-Secret – es wird eine Debug-APK gebaut. Updates müssen dann neu installiert werden (vorher alte App löschen)."
+            echo "BUILD_TASK=assembleDebug" >> "$GITHUB_ENV"
+          fi
+      - name: APK bauen
+        working-directory: mobile/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew "$BUILD_TASK" --no-daemon
+      - name: APK umbenennen
+        run: |
+          mkdir -p dist
+          cp $(find android/app/build/outputs/apk -name '*.apk' | head -1) "dist/Immo-Pipeline-${APP_VERSION_NAME}.apk"
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Immo-Pipeline-Android-${{ env.APP_VERSION_NAME }}
+          path: mobile/dist/*.apk
+          retention-days: 30
